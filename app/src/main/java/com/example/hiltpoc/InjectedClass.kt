@@ -4,13 +4,13 @@ import javax.inject.Inject
 
 class InjectedClass @Inject constructor(
     //constructor injection
-    private val otherInjectedClass: OtherInjectedClass
+    private val myInterface: MyInterface
 ){
     fun sayHello(): String {
         return "Hello"
     }
 
     fun sayBye(): String{
-        return otherInjectedClass.sayGoodbye()
+        return myInterface.sayGoodbye()
     }
 }
