@@ -122,7 +122,9 @@ fun provideAnalyticsService(
 #### Scopes
 Scopes determine whether a class can be injected into another class. The order is descendent, meaning: the Application class, which is the only SingletonComponent, __cannot be injected into any other components__, but it can have __any other component injected into it__.
 A class with the `@ViewModelScoped` annotation can have a `@ActivityScoped` anotated class injected into it, but it cannot have an `@ActivityRetainedScoped` anotated class injected into it.
+
 ![scopes](https://i.imgur.com/I2v2qtQ.png)
+
 Example:
 ```kotlin
 @Singleton
