@@ -12,7 +12,10 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    //field injection
+    /**
+     * Example of Field Injection.
+     * Requires the use of lateinit & var.
+     */
     @Inject lateinit var injectedClass: InjectedClass
 
     override fun onCreate(savedInstanceState: Bundle?) {
