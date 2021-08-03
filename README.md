@@ -62,6 +62,9 @@ class ExampleActivity : AppCompatActivity() { ... }
 ### Field injection
 For field injection, Hilt needs to know how to provide instances of the dependencies from the component. A _binding_ contains the info on how to provide instances of a type as a dependency.
 
+```kotlin
+@Inject lateinit var injectedClass: InjectedClass
+```
 #### Constructor Injection
 One way to provide the _binding_ info is constructor injection. This is done by using the `@Inject`  on the constructor.
 ```kotlin
@@ -74,7 +77,7 @@ class AnalyticsAdapter @Inject constructor(
 ### Modules
 If we are dealing with an interface or a class from an external library, we cannot constructor-inject it.
 
-The `@Module` annotation tells Hilt how to provide instances of certain types. Modules must also be annotated with `@InstallIn`, to tell Hilt which class the module will be installed in.
+The `@Module` annotation tells Hilt how to provide instances of certain types. Modules must also be annotated with `@InstallIn`, to tell Hilt which component (see [Scopes](#scopes)) the module will be installed in.
 ```kotlin
 @Module
 @InstallIn(ActivityComponent::class)
@@ -119,12 +122,28 @@ fun provideAnalyticsService(
 }
 ```
 
+### 💥 @Binds vs @Provides 💥
+`@Binds` cannot resolve dependency issues for third party libraries, but `@Provides` does, as well as resolving local dependency issues such as providing interface implementation. `@Provides` is also easier to read and doesn't require the module or the method to be abstract:
+```kotlin
+@Provides
+fun provideInterfaceImplementation(): MyInterface {
+    return MyInterfaceImpl()
+}
+```
+```kotlin
+@Binds
+abstract fun bindInterfaceImplementation(interfaceImpl: MyInterfaceImpl): MyInterface
+```
+
+|   @Binds  | @Provides |
+| ------------- | ------------- |
+| Resolves interface injection issues |  Resolves interface injection issues |
+| --- | Resolves third party library injection issues |
+| More efficient due to the Modules not being instantiated | Provides methods can be instance methods, which require Hilt to instantiate the Module. This can however be overrun by making the methods static. |
 #### Scopes
 Scopes determine whether a class can be injected into another class. The order is descendent, meaning: the Application class, which is the only SingletonComponent, __cannot be injected into any other components__, but it can have __any other component injected into it__.
 A class with the `@ViewModelScoped` annotation can have a `@ActivityScoped` anotated class injected into it, but it cannot have an `@ActivityRetainedScoped` anotated class injected into it.
-
 ![scopes](https://i.imgur.com/I2v2qtQ.png)
-
 Example:
 ```kotlin
 @Singleton
@@ -134,9 +153,9 @@ class SingletonClass @Inject constructor(){
 @ActivityScoped
 @AndroidEntryPoint
 class ScopeActivity: AppCompatActivity() {
-//    This yields a build error    
-//    @Inject
-//    lateinit var fragmentClass: FragmentClass
+
+    @Inject
+    lateinit var fragmentClass: FragmentClass   //compilation error
 
     @Inject
     lateinit var singletonClass: SingletonClass
