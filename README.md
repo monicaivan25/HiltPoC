@@ -42,10 +42,80 @@ android {
 ```
 
 ## Hilt Application
-All apps that use Hilt must contain an _Application_ class, annotated with __@HiltAndroidApp__.
+All apps that use Hilt must contain an _Application_ class, annotated with `@HiltAndroidApp`.
 ```kotlin
 @HiltAndroidApp
 class ExampleApplication : Application() { ... }
 ```
 > @HiltAndroidApp triggers code generation: it generates a base class serving as an app-level dependency container. This component is attached to the __Application__ object's lifecycle, and provides dependencies to it.
+
+## Dependency injection
+Hilt provides dependencies to classes that have the `@AndroidEntryPoint` annotation. If you annotate an Android class with @AndroidEntryPoint, then you also must annotate the classes that depend on it.
+```kotlin
+@AndroidEntryPoint
+class ExampleActivity : AppCompatActivity() { ... }
+```
+> @AndroidEntryPoint generates an individual component for each class in your project. These components can receive dependencies from their respective parents, as per the component hierarchy:
+![component hierarchy](https://developer.android.com/images/training/dependency-injection/hilt-hierarchy.svg)
+
+
+### Field injection
+For field injection, Hilt needs to know how to provide instances of the dependencies from the component. A _binding_ contains the info on how to provide instances of a type as a dependency.
+
+#### Constructor Injection
+One way to provide the _binding_ info is constructor injection. This is done by using the `@Inject`  on the constructor.
+```kotlin
+class AnalyticsAdapter @Inject constructor(
+  private val service: AnalyticsService
+) { ... }
+```
+>In the example, __AnalyticsAdapter__ has __AnalyticsService__ as a dependency. Therefore, Hilt must also know how to provide instances of AnalyticsService.
+
+### Modules
+If we are dealing with an interface or a class from an external library, we cannot constructor-inject it.
+
+The `@Module` annotation tells Hilt how to provide instances of certain types. Modules must also be annotated with `@InstallIn`, to tell Hilt which class the module will be installed in.
+```kotlin
+@Module
+@InstallIn(ActivityComponent::class)
+abstract class AnalyticsModule {
+}
+```
+### Interface injection
+Interfaces cannot have constructor injections.The `@Binds` annotation over an abstract method, tells Hilt which implementation to use.
+```kotlin
+interface AnalyticsService {
+  fun analyticsMethods()
+}
+
+// Constructor-injected, because Hilt needs to know how to
+// provide instances of AnalyticsServiceImpl, too.
+class AnalyticsServiceImpl @Inject constructor(
+  ...
+) : AnalyticsService { ... }
+
+@Module
+@InstallIn(ActivityComponent::class)
+abstract class AnalyticsModule {
+
+  @Binds
+  abstract fun bindAnalyticsService(
+    analyticsServiceImpl: AnalyticsServiceImpl
+  ): AnalyticsService
+}
+```
+
+### External library class injection
+We use `@Provides` over a custom function __inside a Hilt module__ to tell Hilt how to provide an instance of a certain type.
+```kotlin 
+@Provides
+fun provideAnalyticsService(
+  // Potential dependencies of this type
+): AnalyticsService {
+    return Retrofit.Builder()
+             .baseUrl("https://example.com")
+             .build()
+             .create(AnalyticsService::class.java)
+}
+```
 
